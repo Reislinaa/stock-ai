@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI 股市助手</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; line-height: 1.6; }
+        input, button { padding: 10px; width: 100%; margin-top: 10px; }
+        #result { background: #f4f4f4; padding: 15px; margin-top: 20px; border-radius: 8px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h2>📈 A股/基金 AI 助手</h2>
+    <input type="text" id="code" placeholder="输入股票或基金代码 (如: 000001)">
+    <button onclick="analyze()">开始 AI 分析</button>
+    <div id="result">等待输入...</div>
+
+    <script>
+        async function analyze() {
+            const code = document.getElementById('code').value;
+            const resBox = document.getElementById('result');
+            resBox.innerText = "AI 正在分析行情，请稍后...";
+            
+            // 这里替换成你稍后在 Cloudflare 得到的 Worker 地址
+            const workerUrl = 'https://你的worker名字.workers.dev/';
+            
+            try {
+                const response = await fetch(`${workerUrl}?code=${code}`);
+                const data = await response.text();
+                resBox.innerText = data;
+            } catch (e) {
+                resBox.innerText = "出错啦，请检查 Worker 配置";
+            }
+        }
+    </script>
+</body>
+</html>

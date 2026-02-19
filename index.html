@@ -1,37 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>AI 股市助手</title>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智投数据中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; line-height: 1.6; }
-        input, button { padding: 10px; width: 100%; margin-top: 10px; }
-        #result { background: #f4f4f4; padding: 15px; margin-top: 20px; border-radius: 8px; white-space: pre-wrap; }
+        body { background: #0f172a; color: #f8fafc; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .gradient-text { background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; color: transparent; }
     </style>
 </head>
-<body>
-    <h2>📈 A股/基金 AI 助手</h2>
-    <input type="text" id="code" placeholder="输入股票或基金代码 (如: 000001)">
-    <button onclick="analyze()">开始 AI 分析</button>
-    <div id="result">等待输入...</div>
+<body class="min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold gradient-text"><i class="fa-solid fa-chart-line mr-2"></i>AI 智投分析系统</h1>
+            <div class="text-sm text-slate-400">实时动态更新中</div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="w-2 h-6 bg-blue-500 rounded mr-3"></span>A股实时买入热榜
+                    </h3>
+                    <div id="stock-list" class="space-y-3 text-sm">正在计算K线偏离度...</div>
+                </div>
+
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <span class="w-2 h-6 bg-emerald-500 rounded mr-3"></span>基金定投建议榜
+                    </h3>
+                    <div id="fund-list" class="space-y-3 text-sm">正在抓取净值数据...</div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="glass rounded-2xl p-6 sticky top-8 h-[600px] flex flex-col">
+                    <h3 class="text-xl font-semibold mb-4 italic"><i class="fa-solid fa-robot mr-2"></i>AI 投资策略咨询</h3>
+                    <div id="chat-box" class="flex-1 overflow-y-auto mb-4 space-y-4 pr-2 text-sm text-slate-300">
+                        <div class="bg-slate-800 p-3 rounded-lg">你好！我是豆包 AI，请输入股票代码或投资意向，我为你深度解析。</div>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="ai-input" placeholder="问问看：000001现在能买吗？" 
+                               class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:border-blue-500">
+                        <button onclick="askAI()" class="absolute right-2 top-2 bg-blue-600 hover:bg-blue-500 p-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        async function analyze() {
-            const code = document.getElementById('code').value;
-            const resBox = document.getElementById('result');
-            resBox.innerText = "AI 正在分析行情，请稍后...";
-            
-            // 这里替换成你稍后在 Cloudflare 得到的 Worker 地址
-            const workerUrl = 'https://stock-ai.2831477194.workers.dev/';
-            
+        const WORKER_URL = 'https://你的Worker链接.workers.dev/'; // 👈 记得换成你的
+
+        async function loadRankings() {
             try {
-                const response = await fetch(`${workerUrl}?code=${code}`);
-                const data = await response.text();
-                resBox.innerText = data;
+                const res = await fetch(`${WORKER_URL}ranking`);
+                const data = await res.json();
+                
+                // 渲染股票
+                document.getElementById('stock-list').innerHTML = data.stocks.map(s => `
+                    <div class="flex justify-between items-center p-3 hover:bg-slate-800/50 rounded-lg transition border-b border-slate-800">
+                        <span><b class="text-blue-400">${s.code}</b> ${s.name}</span>
+                        <div class="text-right">
+                            <div class="${s.score > 0 ? 'text-rose-500' : 'text-emerald-500'} font-mono">${s.change}%</div>
+                            <div class="text-xs text-slate-500 italic">建议: ${s.advise}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // 渲染基金
+                document.getElementById('fund-list').innerHTML = data.funds.map(f => `
+                    <div class="flex justify-between items-center p-3 hover:bg-slate-800/50 rounded-lg transition border-b border-slate-800">
+                        <span><b class="text-emerald-400">${f.code}</b> ${f.name}</span>
+                        <span class="px-2 py-1 bg-slate-800 rounded text-xs">估算净值: ${f.gz}</span>
+                    </div>
+                `).join('');
+            } catch (e) { console.error("加载排行榜失败"); }
+        }
+
+        async function askAI() {
+            const input = document.getElementById('ai-input');
+            const chatBox = document.getElementById('chat-box');
+            if(!input.value) return;
+
+            const userMsg = input.value;
+            chatBox.innerHTML += `<div class="bg-blue-900/30 p-3 rounded-lg text-right ml-8"> ${userMsg} </div>`;
+            input.value = '';
+
+            try {
+                const res = await fetch(`${WORKER_URL}chat?msg=${userMsg}`);
+                const text = await res.text();
+                chatBox.innerHTML += `<div class="bg-slate-800 p-3 rounded-lg mr-8"> AI: ${text} </div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
             } catch (e) {
-                resBox.innerText = "出错啦，请检查 Worker 配置";
+                chatBox.innerHTML += `<div class="text-red-400 text-xs">AI 走丢了...</div>`;
             }
         }
+
+        loadRankings(); // 初始化加载
     </script>
 </body>
 </html>

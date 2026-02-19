@@ -22,7 +22,7 @@
             resBox.innerText = "AI 正在分析行情，请稍后...";
             
             // 这里替换成你稍后在 Cloudflare 得到的 Worker 地址
-            const workerUrl = 'https://你的worker名字.workers.dev/';
+            const workerUrl = 'https://stock-ai.2831477194.workers.dev/';
             
             try {
                 const response = await fetch(`${workerUrl}?code=${code}`);
